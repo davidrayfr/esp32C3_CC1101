@@ -1,3 +1,5 @@
+// Transfer to Mac
+
 #include <Arduino.h>
 #include <SPI.h>
 #include "SmartRC_CC1101.h"
