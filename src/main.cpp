@@ -11,7 +11,10 @@ char *transmitt_char = "Hello World";
 void setup() {
 
     Serial.begin(115200);
+    Serial.println("Programme Start");
 
+    SPI.begin(4, 5, 6, 7);
+    ELECHOUSE_cc1101.setSpiPin(5, 6, 4, 7);
     if (ELECHOUSE_cc1101.getCC1101()){      // Check the CC1101 Spi connection.
     Serial.println("Connection OK");
     }else{
@@ -56,13 +59,16 @@ void loop() {
 
 //Transmitt "Hello World" from byte format.
 ELECHOUSE_cc1101.SendData(transmitt_byte, 11, 100);
+Serial.println("Transmitt Hello World from byte format.");
 delay(2000);
-Serial.println("Hello World");
+
 //Transmitt "Hello World" from char format.
 ELECHOUSE_cc1101.SendData(transmitt_char, 100);
+Serial.println("Transmitt Hello World from char format.");
 delay(2000);
 
 //Transmitt "Hello World" from char format directly.
 ELECHOUSE_cc1101.SendData("Hello World", 100);
+Serial.println("Transmitt Hello World from char format directly.");
 delay(2000);
 }
