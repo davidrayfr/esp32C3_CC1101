@@ -102,8 +102,8 @@ void setup()
     // Configuration radio
     // ------------------------------------------------
 
-    //radio.setMHZ(868.350);
-    radio.setMHZ(433.92);
+    radio.setMHZ(868.350);
+    //radio.setMHZ(433.92);
 
     // 2 = ASK/OOK
     radio.setModulation(2);
