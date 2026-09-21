@@ -6,11 +6,11 @@
 // ESP32-C3 <-> CC1101
 // ============================================================
 
-#define CC1101_SCK   6
-#define CC1101_MISO  2
-#define CC1101_MOSI  7
-#define CC1101_CS    8
-#define CC1101_GDO0  1
+#define CC1101_SCK   4
+#define CC1101_MISO  5
+#define CC1101_MOSI  6
+#define CC1101_CS    7
+#define CC1101_GDO0  10
 
 #define BUTTON_PIN   9
 #define LED_PIN      3
@@ -176,12 +176,16 @@ void setup()
     // --------------------------------------------------------
 
     radio.setMHZ(868.350);
-
+    
     // 2 = ASK/OOK
     radio.setModulation(2);
 
     // Puissance faible pour le test
-    radio.setPA(-10);
+ //   radio.setPA(-10);
+
+ // puissance maximale
+    radio.setPA(12);
+
 
     Serial.println("Frequence : 868.350 MHz");
     Serial.println("Modulation : OOK");
