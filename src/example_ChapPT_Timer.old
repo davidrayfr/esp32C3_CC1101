@@ -114,7 +114,7 @@ void sendTestRaw()
 
     // Premier état
     digitalWrite(CC1101_GDO0, HIGH);
-
+    
     // Première durée : 500 us
     timerAlarm(timer, abs(DATA_RAW[0]), false, 0);
 }
