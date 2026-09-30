@@ -63,10 +63,8 @@ void IRAM_ATTR onTimer()
     // Fin de la séquence
     if (rawIndex >= DATA_RAW_LENGTH) {
         digitalWrite(CC1101_GDO0, LOW);
-
         transmitting = false;
         timerDone = true;
-
         timerAlarm(timer, 1000, false, 0);
         return;
     }
@@ -77,23 +75,111 @@ void IRAM_ATTR onTimer()
     // Négatif = OFF
     if (duration > 0) {
         digitalWrite(CC1101_GDO0, HIGH);
+        Serial.print("HIGH");
+        Serial.print(duration);
     } else {
         digitalWrite(CC1101_GDO0, LOW);
+        Serial.print("LOW");
+        Serial.print(duration);
     }
 
     uint32_t nextDuration = abs(duration);
 
-    rawIndex++;
+    rawIndex=rawIndex+1;
 
     // Programmer la prochaine interruption
     timerAlarm(timer, nextDuration, false, 0);
 }
 
 // ============================================================
-// ENVOI DU MOTIF DE TEST
+// ENVOI DU MOTIF DE RAWDATA
 // ============================================================
+void sendRawData()
+{
+    Serial.println();
+    Serial.println("===== TEST RAW OOK =====");
 
-void sendTestRaw()
+    digitalWrite(LED_PIN, HIGH);
+
+    radio.SetTx();
+
+    for (size_t i = 0; i < DATA_RAW_LENGTH; i++)
+    {
+        int duration = DATA_RAW[i];
+
+        if (duration > 0)
+        {
+            // Porteuse ON
+            //
+            // Le CC1101 reste en émission pendant
+            // la durée indiquée.
+            Serial.print("porteuse ON for ");
+            Serial.print(duration);
+            Serial.println("Microseconds");
+            delayMicroseconds(duration);
+        }
+        else
+        {
+            // Porteuse OFF
+            radio.SetRx();
+            Serial.print("porteuse OFF for ");
+            Serial.print(duration);
+            Serial.println("Microseconds");
+            delayMicroseconds(-duration);
+
+            if (i + 1 < DATA_RAW_LENGTH)
+            {
+                radio.SetTx();
+            }
+        }
+    }
+
+    radio.SetRx();
+
+    digitalWrite(LED_PIN, LOW);
+
+    Serial.println("Data RAW termine.");
+}
+// Send with Digital Wire
+void sendRawDataGDO0()
+{
+    Serial.println();
+    Serial.println("===== TEST RAW OOK with Digital Wire =====");
+
+    digitalWrite(LED_PIN, HIGH);
+
+    for (size_t i = 0; i < DATA_RAW_LENGTH; i++)
+    {
+        int duration = DATA_RAW[i];
+
+        if (duration > 0)
+        {
+            // Porteuse ON
+            //
+            // Le CC1101 reste en émission pendant
+            // la durée indiquée.
+            Serial.print("porteuse ON for ");
+            Serial.print(duration);
+            Serial.println("Microseconds");
+            digitalWrite(CC1101_GDO0, HIGH);
+            delayMicroseconds(duration);
+        }
+        else
+        {
+            Serial.print("porteuse OFF for ");
+            Serial.print(duration);
+            Serial.println("Microseconds");
+            digitalWrite(CC1101_GDO0, LOW);
+            delayMicroseconds(-duration);
+        }
+    }
+
+    digitalWrite(LED_PIN, LOW);
+
+    Serial.println("Data RAW via Digital Wire termine.");
+}
+
+void sendRawDataTimer()
 {
     if (transmitting) {
         return;
@@ -118,6 +204,48 @@ void sendTestRaw()
     
     // Première durée : 500 us
     timerAlarm(timer, abs(DATA_RAW[0]), false, 0);
+}
+
+void sendTestSignal()
+{
+    Serial.println();
+    Serial.println("Emission du signal TEST...");
+
+    digitalWrite(LED_PIN, HIGH);
+
+    /*
+     * Ceci est volontairement une trame de test.
+     *
+     * Elle ne correspond PAS au contenu du fichier
+     * RAW.sub.
+     *
+     * Elle sert uniquement a verifier que le CC1101
+     * peut passer correctement en emission.
+     */
+
+    uint8_t testData[] =
+    {
+        0xAA,
+        0x55,
+        0xAA,
+        0x55
+    };
+
+    radio.SetTx();
+
+    // Transmission d'un paquet de test
+    radio.SendData(
+        testData,
+        sizeof(testData)
+    );
+
+    delay(50);
+
+    radio.SetRx();
+
+    digitalWrite(LED_PIN, LOW);
+
+    Serial.println("Emission test terminee.");
 }
 
 // ============================================================
@@ -161,9 +289,9 @@ void setup()
         CC1101_CS
     );
 
-    radio.setGDO0(CC1101_GDO0);
-
     radio.Init();
+    radio.setGDO0(CC1101_GDO0);
+    radio.setCCMode(0);
 
     if (!radio.getCC1101()) {
         Serial.println("ERREUR : CC1101 non détecté !");
@@ -175,22 +303,30 @@ void setup()
     // --------------------------------------------------------
     // Configuration radio
     // --------------------------------------------------------
-
+    Serial.println();
+    Serial.println("Configuration radio :");
     radio.setMHZ(868.350);
-    
+    Serial.print("Frequence : ");
+    Serial.print(radio.getMHZ());
+    Serial.println(" MHz");
+
     // 2 = ASK/OOK
     radio.setModulation(2);
-
-    // Puissance faible pour le test
- //   radio.setPA(-10);
-
- // puissance maximale
-    radio.setPA(12);
-
-
-    Serial.println("Frequence : 868.350 MHz");
     Serial.println("Modulation : OOK");
+    radio.setRxBW(650);     // Approximately 650 kHz RX bandwidth
+    radio.setPktFormat(3);   // asynchronous serial mode
+    radio.setSyncMode(0);    // no sync-word processing
+ 
+    // Puissance volontairement faible pour le test -10
+    //radio.setPA(-10);
+     // Puissance Maximum : 12
+    radio.setPA(12);
     Serial.println("Puissance : 12 dBm");
+
+    Serial.println();
+    Serial.println("Pret.");
+    Serial.println("Appuyer sur le bouton pour lancer");
+    Serial.println("une trame OOK de TEST.");
 
     // --------------------------------------------------------
     // TIMER HARDWARE
@@ -204,6 +340,7 @@ void setup()
         Serial.println("ERREUR : impossible de creer le timer !");
         return;
     }
+    timerStart(timer); // Necessaire ?
 
     timerAttachInterrupt(timer, &onTimer);
 
@@ -230,7 +367,12 @@ void loop()
         delay(20);
 
         if (digitalRead(BUTTON_PIN) == LOW) {
-            sendTestRaw();
+            sendRawData();
+            //sendTestSignal();
+            delay(2000);
+            sendRawDataGDO0();
+            delay(2000);
+            sendRawDataTimer();
         }
     }
 

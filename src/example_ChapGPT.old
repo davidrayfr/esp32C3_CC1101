@@ -209,7 +209,7 @@ void sendTestSignal()
 
     digitalWrite(LED_PIN, LOW);
 
-    Serial.println("Emission terminee.");
+    Serial.println("Emission test terminee.");
 }
 
 // --------------------------------------------------
